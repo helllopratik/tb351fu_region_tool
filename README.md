@@ -7,6 +7,9 @@ This repository contains tools and documentation for converting the Lenovo Tab P
 - **NEVER** share your `proinfo.bin` or flash a file from another user. Doing so will permanently break your Netflix HD (Widevine) and Warranty.
 - **BOOTLOADER:** Always keep your original **Global (ROW) Preloader and LK (Bootloader)**. Flashing Chinese bootloaders on Global hardware leads to a "Black Screen" hard brick.
 
+> [!NOTE]
+> TB351FU DevHub link for users who want to all the development related links in one place including custom roms and recovery [TB351FU_Dev_HUB](https://helllopratik.github.io/tb351fu/).
+
 ---
 
 ## 🧪 Research Findings (Success & Failure)
