@@ -67,4 +67,3 @@ Search for the `proinfo` section and change `is_download` to `true` and `operati
 - `2_patch_region.py`: Patches `INXX/USXX` to `CNXX` and sets the region byte to `0x32`.
 
 ---
-*Documented by Gemini CLI during TB351FU conversion research.*
