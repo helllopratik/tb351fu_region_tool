@@ -66,4 +66,3 @@ Search for the `proinfo` section and change `is_download` to `true` and `operati
 - `1_backup_partitions.sh`: Backup your unique IDs (Root required).
 - `2_patch_region.py`: Patches `INXX/USXX` to `CNXX` and sets the region byte to `0x32`.
 
----
