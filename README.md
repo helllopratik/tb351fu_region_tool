@@ -1,68 +1,62 @@
-# TB351FU (Lenovo Tab Plus) Region Conversion Tools & Research
+# TB351FU (Lenovo Tab Plus) Region Conversion Toolkit
 
-This repository contains tools and documentation for converting the Lenovo Tab Plus (TB351FU) between Global (ROW) and Chinese (PRC/ZUI) regions. This is the result of extensive testing on MediaTek (MT6789) hardware.
+![Region Tool Banner](./assets/region-tool-banner.svg)
 
-## ⚠️ CRITICAL WARNINGS
-- **PRIVATE DATA:** The `proinfo` partition contains your unique **Serial Number** and **Widevine L1 DRM keys**. 
-- **NEVER** share your `proinfo.bin` or flash a file from another user. Doing so will permanently break your Netflix HD (Widevine) and Warranty.
-- **BOOTLOADER:** Always keep your original **Global (ROW) Preloader and LK (Bootloader)**. Flashing Chinese bootloaders on Global hardware leads to a "Black Screen" hard brick.
+This repository contains tools to convert the **Lenovo Tab Plus (TB351FU)** from Global (ROW) hardware to the Chinese (PRC/ZUI) ROM.
+
+## 🚀 NO PROINFO FLASHING REQUIRED
+> [!IMPORTANT]
+> **DO NOT flash `proinfo.bin`.** Our research has confirmed that modifying the `proinfo` partition is **NOT** necessary to boot the CN ROM and carries high risk (losing Serial Number and Widevine L1). 
+> 
+> The region lock is bypassed by patching the **Bootloader (LK)** and **Device Tree (DTBO)** instead.
+
+---
+
+## 🧪 How it Works
+The TB351FU bootloader checks if the hardware region (from RPMB) matches the software region (from DTBO). If you flash a stock CN ROM on ROW hardware, the bootloader sees `ROW vs PRC` and powers off.
+
+**Our Bypass:**
+1.  **DTBO Patch:** Changes the "Expected" region in the CN firmware from `PRC` to `ROW`. This makes the bootloader check **PASS**.
+2.  **LK Patch:** Spoofs the system property `androidboot.countrycode=CN`. This tricks the Android OS (ZUI) into thinking it is running on a Chinese device, enabling all ZUI features and bypassing system-level region checks.
+
+---
+
+## 🛠 Usage Instructions
+
+### 1. Prerequisites
+-   **Bootloader Unlocked** (Orange State must be visible).
+-   CN ROM Firmware files.
+-   Linux environment (or WSL) to run the patch script.
+
+### 2. Patching the Firmware
+1.  Copy **`lk.img`** and **`dtbo.img`** from your CN ROM folder into the **`assets/`** directory of this tool.
+2.  Run the conversion script:
+    ```bash
+    chmod +x convert_cn_to_row.sh
+    ./convert_cn_to_row.sh
+    ```
+3.  The patched images will be created in the **`modified/`** folder.
+
+### 3. Flashing
+1.  Open **SP Flash Tool v6**.
+2.  Load the **CN ROM Scatter file**.
+3.  In the partition list, replace the following files with our patched versions:
+    -   `dtbo` -> **`modified/dtbo_patched.img`**
+    -   `lk` -> **`modified/lk_patched.img`**
+4.  **Keep original CN files** for `preloader`, `boot`, `vendor_boot`, `vbmeta`, and `super`.
+5.  Flash using **"Download Only"** mode.
+6.  **Wipe Data:** After flashing, you **must** enter recovery and perform a **Factory Reset** (Format Userdata/Metadata) to boot successfully.
+
+---
+
+## 📂 File Structure
+-   `convert_cn_to_row.sh`: Automates the hex patching process.
+-   `magiskboot`: The core utility used for hex patching.
+-   `assets/`: Place your stock CN images here.
+-   `modified/`: The output folder for compatible images.
+-   `2_patch_region.py`: (Legacy) Previous method for proinfo patching (Not recommended).
+
+---
 
 > [!NOTE]
-> TB351FU DevHub link for users who want to all the development related links in one place including custom roms and recovery [TB351FU_Dev_HUB](https://helllopratik.github.io/tb351fu/).
-
----
-
-## 🧪 Research Findings (Success & Failure)
-
-### ✅ What Works (The "Hybrid" Method)
-1. **The Handshake:** By patching the `proinfo` partition to `CNXX`, the device identity aligns with the ZUI 17 software.
-2. **The Bypass:** Using the **ROW Bootloader** (Orange State) with **CN System Content** (super, boot, dtbo) works **ONLY** if you disable AVB verification.
-3. **Recovery:** We successfully booted into a ZUI 17 recovery while using the ROW boot chain. This confirmed that the kernel was running, but the system was being blocked by regional security checks.
-4. **The Fix:** Running `fastboot --disable-verity --disable-verification flash vbmeta vbmeta.img` is required to stop the "Big Orange Screen" or "OS is Corrupted" loops.
-
-### ❌ What Fails (The "Full" Method)
-1. **CN Bootloader on ROW Hardware:** **FAILED**. This causes an instant black-screen bootloop because the ROW Preloader rejects the CN Bootloader's signature.
-2. **Region Mismatch:** Flashing ZUI 17 without patching `proinfo` leads to the error: *"Current system is not compatible with the hardware."*
-3. **Locked Bootloader:** A locked bootloader will strictly refuse any cross-region flashing. **Orange State must be visible.**
-
----
-
-## 🛠 How to Flash the Patch
-
-By default, the `proinfo` partition is "Protected" in SP Flash Tool. To flash your patched file, you must modify your `MT6789_Android_scatter.xml` (or `flash.xml`).
-
-### 1. Enable proinfo in Scatter/XML
-Search for the `proinfo` section and change `is_download` to `true` and `operation_type` to `UPDATE`.
-
-**Required Segment:**
-```xml
-<partition_index name="SYS10">
-      <partition_name>proinfo</partition_name>
-      <file_name>proinfo_prc.bin</file_name>
-      <is_download>true</is_download>
-      <type>NORMAL_ROM</type>
-      <linear_start_addr>0x27400000</linear_start_addr>
-      <physical_start_addr>0x27400000</physical_start_addr>
-      <partition_size>0x300000</partition_size>
-      <region>UFS_LU2</region>
-      <storage>HW_STORAGE_UFS</storage>
-      <boundary_check>true</boundary_check>
-      <is_reserved>false</is_reserved>
-      <operation_type>UPDATE</operation_type>
-      <is_upgradable>true</is_upgradable>
-</partition_index>
-```
-
-### 2. Flashing Steps
-1. Use `2_patch_region.py` to create your `proinfo_prc.bin`.
-2. Update the scatter file as shown above.
-3. In SP Flash Tool, select the modified scatter.
-4. Flash `proinfo_prc.bin` via BROM Mode (Vol Up + Vol Down).
-5. **Wipe Data:** You MUST perform a factory reset after flashing for the new region identity to take effect.
-
----
-
-## 📂 Tool Usage
-- `1_backup_partitions.sh`: Backup your unique IDs (Root required).
-- `2_patch_region.py`: Patches `INXX/USXX` to `CNXX` and sets the region byte to `0x32`.
-
+> For more development links, custom recoveries, and ROMs, visit the [TB351FU DevHub](https://helllopratik.github.io/tb351fu/).
